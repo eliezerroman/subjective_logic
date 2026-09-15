@@ -355,3 +355,38 @@ class BinomialOpinion:
         p_self = {"x": self.projected_probability, "not_x": 1.0 - self.projected_probability}
         p_other = {"x": other.projected_probability, "not_x": 1.0 - other.projected_probability}
         return _conflict.degree_of_conflict(p_self, self.uncertainty, p_other, other.uncertainty)
+
+    # ------------------------------------------------------------------
+    # Addition, subtraction, complement (Chapter 6)
+    # ------------------------------------------------------------------
+
+    def __add__(self, other: "BinomialOpinion") -> "BinomialOpinion":
+        """
+        Addition of opinions about two disjoint values (Definition 6.1):
+        self + other gives the opinion about their union. This is NOT
+        for combining multiple agents' opinions about the SAME variable
+        -- that is fusion (Chapter 12, not yet implemented). See
+        operators.add for the full docstring.
+        """
+        from .operators import add
+
+        return add(self, other)
+
+    def __sub__(self, other: "BinomialOpinion") -> "BinomialOpinion":
+        """
+        Subtraction of opinions (Definition 6.2): self - other, where
+        self is the opinion about a union and other is the opinion about
+        one of its parts. See operators.subtract for the full docstring.
+        """
+        from .operators import subtract
+
+        return subtract(self, other)
+
+    def __invert__(self) -> "BinomialOpinion":
+        """
+        Complement of the opinion (Definition 6.3): ~self gives the
+        opinion about the complement value. See operators.complement.
+        """
+        from .operators import complement
+
+        return complement(self)
