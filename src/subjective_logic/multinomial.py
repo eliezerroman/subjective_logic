@@ -270,3 +270,24 @@ class MultinomialOpinion:
     def is_absolute(self) -> bool:
         """True if some b_X(x) = 1 (absolute certainty that x is TRUE)."""
         return any(math.isclose(b, 1.0, abs_tol=_ADDITIVITY_TOLERANCE) for b in self.belief_masses.values())
+
+    # ------------------------------------------------------------------
+    # Probabilistic opinion notation (Section 3.7.1, Definition 3.10/3.11)
+    # ------------------------------------------------------------------
+
+    def to_probabilistic_notation(self) -> tuple[dict, float, dict]:
+        """
+        Convert to the probabilistic opinion notation pi_X = (P_X, u_X, a_X)
+        (Eq. 3.40, p. 47).
+        """
+        return self.projected_probabilities, self.uncertainty, dict(self.base_rates)
+
+    @classmethod
+    def from_probabilistic_notation(
+        cls, projected_probabilities: Mapping, uncertainty: float, base_rates: Mapping
+    ) -> "MultinomialOpinion":
+        """
+        Inverse mapping via Eq. 3.41 (p. 47): b_X(x) = P_X(x) - a_X(x) * u_X.
+        """
+        belief_masses = {x: p - base_rates[x] * uncertainty for x, p in projected_probabilities.items()}
+        return cls(belief_masses=belief_masses, uncertainty=uncertainty, base_rates=dict(base_rates))

@@ -219,3 +219,30 @@ class BinomialOpinion:
     def is_uncertain(self) -> bool:
         """True if 0 < u < 1 (partially uncertain, the most common case in practice)."""
         return 0.0 < self.uncertainty < 1.0
+
+    # ------------------------------------------------------------------
+    # Probabilistic opinion notation (Section 3.7.1, Definition 3.10/3.11)
+    # ------------------------------------------------------------------
+
+    def to_probabilistic_notation(self) -> tuple[float, float, float]:
+        """
+        Convert to the probabilistic opinion notation pi_x = (P(x), u_x, a_x)
+        (Eq. 3.42, p. 48): the same opinion, expressed via projected
+        probability instead of belief/disbelief mass. Useful for reporting
+        to people more familiar with plain probabilities.
+        """
+        return self.projected_probability, self.uncertainty, self.base_rate
+
+    @classmethod
+    def from_probabilistic_notation(
+        cls, projected_probability: float, uncertainty: float, base_rate: float
+    ) -> "BinomialOpinion":
+        """
+        Inverse of to_probabilistic_notation, via Eq. 3.41 (p. 47):
+
+            b_x = P(x) - a_x * u_x
+            d_x = 1 - u_x - b_x
+        """
+        belief = projected_probability - base_rate * uncertainty
+        disbelief = 1.0 - uncertainty - belief
+        return cls(belief=belief, disbelief=disbelief, uncertainty=uncertainty, base_rate=base_rate)
