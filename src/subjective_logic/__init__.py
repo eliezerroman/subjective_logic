@@ -9,7 +9,7 @@ from .domain import base_rate_of_value, composite_set, hyperdomain, relative_bas
 from .entropy import cross_entropy, opinion_entropy, sharpness_entropy, surprisal, uncertainty_entropy, vagueness_entropy
 from .hyperopinion import HyperOpinion
 from .multinomial import MultinomialOpinion
-from .operators import add, complement, subtract
+from .operators import add, codivide, comultiply, complement, divide, multiply, subtract
 
 __all__ = [
     "BinomialOpinion",
@@ -36,4 +36,8 @@ __all__ = [
     "add",
     "complement",
     "subtract",
+    "multiply", 
+    "comultiply", 
+    "divide", 
+    "codivide",
 ]

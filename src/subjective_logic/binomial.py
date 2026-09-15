@@ -390,3 +390,27 @@ class BinomialOpinion:
         from .operators import complement
 
         return complement(self)
+
+    def __mul__(self, other: "BinomialOpinion") -> "BinomialOpinion":
+        """Binomial multiplication (Definition 7.1): self AND other (assumes independence)."""
+        from .operators import multiply
+
+        return multiply(self, other)
+
+    def __or__(self, other: "BinomialOpinion") -> "BinomialOpinion":
+        """Binomial comultiplication (Definition 7.2): self OR other (assumes independence)."""
+        from .operators import comultiply
+
+        return comultiply(self, other)
+
+    def __truediv__(self, other: "BinomialOpinion") -> "BinomialOpinion":
+        """Binomial division (Definition 7.3): inverse of multiplication."""
+        from .operators import divide
+
+        return divide(self, other)
+
+    def codivide(self, other: "BinomialOpinion") -> "BinomialOpinion":
+        """Binomial codivision (Definition 7.4): inverse of comultiplication."""
+        from .operators import codivide
+
+        return codivide(self, other)
