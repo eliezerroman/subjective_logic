@@ -246,3 +246,112 @@ class BinomialOpinion:
         belief = projected_probability - base_rate * uncertainty
         disbelief = 1.0 - uncertainty - belief
         return cls(belief=belief, disbelief=disbelief, uncertainty=uncertainty, base_rate=base_rate)
+
+    # ------------------------------------------------------------------
+    # Sharp/vague/focal mass decomposition (Section 4.1) and mass-sum (4.2)
+    # ------------------------------------------------------------------
+
+    @property
+    def sharp_belief_mass(self) -> float:
+        """
+        Sharp belief mass b^S_x, Eq. 4.1. Binomial opinions never contain
+        vagueness (Section 4.1.2, p. 53: "In the case of binary domains,
+        there can be no vague belief mass"), so this simply equals belief.
+        """
+        return self.belief
+
+    @property
+    def vague_belief_mass(self) -> float:
+        """Always 0.0 for binomial opinions (Section 4.1.2)."""
+        return 0.0
+
+    @property
+    def focal_uncertainty_mass(self) -> float:
+        """Focal uncertainty mass u^F_x, Eq. 4.8: a_x * u_x."""
+        return self.base_rate * self.uncertainty
+
+    @property
+    def mass_sum(self) -> tuple[float, float, float]:
+        """
+        Mass-sum triplet (sharp, vague, focal), Definition 4.6. Sums to
+        projected_probability (Eq. 4.9): a decomposition of "how
+        confident is this opinion" into evidence-backed vs. base-rate-
+        backed confidence.
+        """
+        return (self.sharp_belief_mass, self.vague_belief_mass, self.focal_uncertainty_mass)
+
+    def to_decision_option(self, label: str = "x", utility: float = 1.0):
+        """Wrap this opinion as a decision.DecisionOption for use with choose_best_option."""
+        from .decision import DecisionOption
+
+        return DecisionOption(
+            label=label,
+            sharp_belief_mass=self.sharp_belief_mass,
+            vague_belief_mass=self.vague_belief_mass,
+            focal_uncertainty_mass=self.focal_uncertainty_mass,
+            utility=utility,
+        )
+
+    # ------------------------------------------------------------------
+    # Entropy (Section 4.7)
+    # ------------------------------------------------------------------
+
+    def _domain_distributions(self):
+        """Internal helper: build {"x", "not_x"} dicts for entropy computation over the full binary domain."""
+        p_x = self.projected_probability
+        projected = {"x": p_x, "not_x": 1.0 - p_x}
+        sharp = {"x": self.belief, "not_x": self.disbelief}
+        vague = {"x": 0.0, "not_x": 0.0}
+        focal = {"x": self.base_rate * self.uncertainty, "not_x": (1.0 - self.base_rate) * self.uncertainty}
+        base_rates = {"x": self.base_rate, "not_x": 1.0 - self.base_rate}
+        return projected, sharp, vague, focal, base_rates
+
+    def opinion_entropy(self) -> float:
+        """Opinion entropy H_P(omega_x), Eq. 4.55, over the full binary domain {x, not_x}."""
+        from . import entropy as _entropy
+
+        projected, *_ = self._domain_distributions()
+        return _entropy.opinion_entropy(projected)
+
+    def sharpness_entropy(self) -> float:
+        """Sharpness entropy H_S(omega_x), Eq. 4.56."""
+        from . import entropy as _entropy
+
+        projected, sharp, _, _, _ = self._domain_distributions()
+        return _entropy.sharpness_entropy(sharp, projected)
+
+    def vagueness_entropy(self) -> float:
+        """Vagueness entropy H_V(omega_x), Eq. 4.57. Always 0.0 for binomial opinions."""
+        from . import entropy as _entropy
+
+        projected, _, vague, _, _ = self._domain_distributions()
+        return _entropy.vagueness_entropy(vague, projected)
+
+    def uncertainty_entropy(self) -> float:
+        """Uncertainty entropy H_U(omega_x), Eq. 4.58."""
+        from . import entropy as _entropy
+
+        projected, _, _, focal, _ = self._domain_distributions()
+        return _entropy.uncertainty_entropy(focal, projected)
+
+    def cross_entropy(self) -> float:
+        """Base-rate to projected-probability cross entropy H_BP(omega_x), Eq. 4.60."""
+        from . import entropy as _entropy
+
+        projected, _, _, _, base_rates = self._domain_distributions()
+        return _entropy.cross_entropy(base_rates, projected)
+
+    # ------------------------------------------------------------------
+    # Conflict (Section 4.8)
+    # ------------------------------------------------------------------
+
+    def degree_of_conflict_with(self, other: "BinomialOpinion") -> float:
+        """
+        Degree of conflict (Definition 4.20) between this opinion and
+        another binomial opinion about the same variable.
+        """
+        from . import conflict as _conflict
+
+        p_self = {"x": self.projected_probability, "not_x": 1.0 - self.projected_probability}
+        p_other = {"x": other.projected_probability, "not_x": 1.0 - other.projected_probability}
+        return _conflict.degree_of_conflict(p_self, self.uncertainty, p_other, other.uncertainty)

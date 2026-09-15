@@ -3,7 +3,10 @@ Subjective Logic formalism, applied to measuring decision degradation
 in agentic AI systems under resource constraints."""
 
 from .binomial import BinomialOpinion, NON_INFORMATIVE_PRIOR_WEIGHT
+from .conflict import conjunctive_certainty, degree_of_conflict, projected_distance
+from .decision import DecisionOption, choose_best_option, utility_normalized_mass_sum, utility_normalized_probability
 from .domain import base_rate_of_value, composite_set, hyperdomain, relative_base_rate
+from .entropy import cross_entropy, opinion_entropy, sharpness_entropy, surprisal, uncertainty_entropy, vagueness_entropy
 from .hyperopinion import HyperOpinion
 from .multinomial import MultinomialOpinion
 
@@ -16,4 +19,17 @@ __all__ = [
     "composite_set",
     "base_rate_of_value",
     "relative_base_rate",
+    "DecisionOption",
+    "choose_best_option",
+    "utility_normalized_probability",
+    "utility_normalized_mass_sum",
+    "surprisal",
+    "opinion_entropy",
+    "sharpness_entropy",
+    "vagueness_entropy",
+    "uncertainty_entropy",
+    "cross_entropy",
+    "projected_distance",
+    "conjunctive_certainty",
+    "degree_of_conflict",
 ]

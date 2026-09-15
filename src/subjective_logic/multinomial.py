@@ -291,3 +291,84 @@ class MultinomialOpinion:
         """
         belief_masses = {x: p - base_rates[x] * uncertainty for x, p in projected_probabilities.items()}
         return cls(belief_masses=belief_masses, uncertainty=uncertainty, base_rates=dict(base_rates))
+
+    # ------------------------------------------------------------------
+    # Sharp/vague/focal mass decomposition (Section 4.1) and mass-sum (4.2)
+    # ------------------------------------------------------------------
+
+    def sharp_belief_mass(self, x) -> float:
+        """Sharp belief mass b^S_X(x), Eq. 4.1. Multinomial opinions never contain vagueness (Sec. 4.1.2)."""
+        return self.belief_masses[x]
+
+    def vague_belief_mass(self, x) -> float:
+        """Always 0.0 for multinomial opinions (Section 4.1.2)."""
+        return 0.0
+
+    def focal_uncertainty_mass(self, x) -> float:
+        """Focal uncertainty mass u^F_X(x), Eq. 4.8: a_X(x) * u_X."""
+        return self.base_rates[x] * self.uncertainty
+
+    def mass_sum(self, x) -> tuple[float, float, float]:
+        """Mass-sum triplet (sharp, vague, focal) for outcome x, Definition 4.6."""
+        return (self.sharp_belief_mass(x), self.vague_belief_mass(x), self.focal_uncertainty_mass(x))
+
+    def to_decision_option(self, x, label: str = None, utility: float = 1.0):
+        """Wrap outcome x of this opinion as a decision.DecisionOption for use with choose_best_option."""
+        from .decision import DecisionOption
+
+        return DecisionOption(
+            label=label if label is not None else str(x),
+            sharp_belief_mass=self.sharp_belief_mass(x),
+            vague_belief_mass=self.vague_belief_mass(x),
+            focal_uncertainty_mass=self.focal_uncertainty_mass(x),
+            utility=utility,
+        )
+
+    # ------------------------------------------------------------------
+    # Entropy (Section 4.7)
+    # ------------------------------------------------------------------
+
+    def opinion_entropy(self) -> float:
+        """Opinion entropy H_P(omega_X), Eq. 4.55."""
+        from . import entropy as _entropy
+
+        return _entropy.opinion_entropy(self.projected_probabilities)
+
+    def sharpness_entropy(self) -> float:
+        """Sharpness entropy H_S(omega_X), Eq. 4.56."""
+        from . import entropy as _entropy
+
+        sharp = {x: self.sharp_belief_mass(x) for x in self.domain}
+        return _entropy.sharpness_entropy(sharp, self.projected_probabilities)
+
+    def vagueness_entropy(self) -> float:
+        """Vagueness entropy H_V(omega_X), Eq. 4.57. Always 0.0 for multinomial opinions."""
+        from . import entropy as _entropy
+
+        vague = {x: 0.0 for x in self.domain}
+        return _entropy.vagueness_entropy(vague, self.projected_probabilities)
+
+    def uncertainty_entropy(self) -> float:
+        """Uncertainty entropy H_U(omega_X), Eq. 4.58."""
+        from . import entropy as _entropy
+
+        focal = {x: self.focal_uncertainty_mass(x) for x in self.domain}
+        return _entropy.uncertainty_entropy(focal, self.projected_probabilities)
+
+    def cross_entropy(self) -> float:
+        """Base-rate to projected-probability cross entropy H_BP(omega_X), Eq. 4.60."""
+        from . import entropy as _entropy
+
+        return _entropy.cross_entropy(self.base_rates, self.projected_probabilities)
+
+    # ------------------------------------------------------------------
+    # Conflict (Section 4.8)
+    # ------------------------------------------------------------------
+
+    def degree_of_conflict_with(self, other: "MultinomialOpinion") -> float:
+        """Degree of conflict (Definition 4.20) with another multinomial opinion over the same domain."""
+        from . import conflict as _conflict
+
+        return _conflict.degree_of_conflict(
+            self.projected_probabilities, self.uncertainty, other.projected_probabilities, other.uncertainty
+        )

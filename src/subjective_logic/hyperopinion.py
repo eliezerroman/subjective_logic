@@ -4,7 +4,10 @@ Hyper-opinions in Subjective Logic.
 Hyper-opinions generalise multinomial opinions by allowing belief mass to
 be assigned to composite values (sets of singleton outcomes), following:
 
-    Josang, A. (2016). Subjective Logic. Springer. Section 3.6.
+    Josang, A. (2016). Subjective Logic. Springer. Section 3.6, and
+    Sections 4.1-4.2, 4.7-4.8 for the sharp/vague/focal decomposition,
+    entropy and conflict measures, which are where vagueness (unique to
+    hyper-opinions) actually matters.
 
 Use case: an agent that can only say "the answer is x1 or x2, but I can't
 tell which" -- e.g. a classifier confident about ruling out some classes
@@ -29,7 +32,7 @@ from types import MappingProxyType
 from typing import FrozenSet, Hashable, Mapping
 
 from .binomial import NON_INFORMATIVE_PRIOR_WEIGHT
-from .domain import hyperdomain, relative_base_rate
+from .domain import base_rate_of_value, hyperdomain, relative_base_rate
 from .multinomial import MultinomialOpinion
 
 _ADDITIVITY_TOLERANCE: float = 1e-9
@@ -129,10 +132,7 @@ class HyperOpinion:
         Build a hyper-opinion from Dirichlet HPDF evidence counts r_X(x)
         over R(X), using the forward mapping of Definition 3.9 / Eq. 3.35
         (p. 43) -- structurally identical to the multinomial mapping
-        (Eq. 3.23), just applied to R(X) instead of X:
-
-            b_X(x) = r_X(x) / (W + sum(r_X))
-            u_X    = W / (W + sum(r_X))
+        (Eq. 3.23), just applied to R(X) instead of X.
         """
         expected = set(hyperdomain(base_rates.keys()))
         if set(evidence.keys()) != expected:
@@ -156,41 +156,36 @@ class HyperOpinion:
             )
         return {x: b * prior_weight / self.uncertainty for x, b in self.belief_masses.items()}
 
-    @property
-    def projected_probabilities(self) -> dict:
+    # ------------------------------------------------------------------
+    # Projected probability (Eq. 3.28), generalised to any x in R(X)
+    # ------------------------------------------------------------------
+
+    def projected_probability_of(self, x: FrozenSet[Hashable]) -> float:
         """
-        Projected probability distribution P_X(x) for each singleton x in
-        the underlying domain X, Eq. 3.28 (p. 40):
+        Projected probability for ANY value x in R(X) (not just
+        singletons), Eq. 3.28 (p. 40):
 
             P_X(x) = sum_{xi in R(X)} a_X(x|xi) * b_X(xi) + a_X(x) * u_X
 
-        This sums to 1 over X (Eq. 3.29.a): projecting back down to
-        singletons restores ordinary probability additivity, even though
-        the hyperdomain's own belief masses are super-additive.
+        Generalises `projected_probabilities` (singletons only, i.e. x in
+        X) to arbitrary hyperdomain values, needed for the mass-sum
+        additivity check in Section 4.2 (Eq. 4.9), which applies to
+        composites too.
         """
-        result = {}
-        for x in self.domain:
-            x_singleton = frozenset((x,))
-            contribution = sum(
-                relative_base_rate(self.base_rates, x_singleton, xi) * b
-                for xi, b in self.belief_masses.items()
-            )
-            result[x] = contribution + self.base_rates[x] * self.uncertainty
-        return result
+        contribution = sum(
+            relative_base_rate(self.base_rates, x, xi) * b for xi, b in self.belief_masses.items()
+        )
+        return contribution + base_rate_of_value(self.base_rates, x) * self.uncertainty
+
+    @property
+    def projected_probabilities(self) -> dict:
+        """Projected probability distribution P_X(x) for each singleton x in domain X (Eq. 3.28)."""
+        return {x: self.projected_probability_of(frozenset((x,))) for x in self.domain}
 
     def to_multinomial(self) -> MultinomialOpinion:
         """
         Project this hyper-opinion onto a multinomial opinion with the
-        same projected probability distribution, Eq. 3.30 (p. 40):
-
-            b'_X(x) = sum_{xi in R(X)} a_X(x|xi) * b_X(xi)
-
-        The book notes (p. 40) that P(omega_X) == P(omega'_X): projecting
-        preserves the projected probability exactly. This is the
-        recommended way to "flatten" a hyper-opinion when a simpler
-        representation is needed downstream -- e.g. uncertainty-
-        maximisation (Section 3.5.6) has no direct hyper-opinion
-        equivalent (p. 39), so it must go through this projection first.
+        same projected probability distribution, Eq. 3.30 (p. 40).
         """
         multinomial_belief = {}
         for x in self.domain:
@@ -203,13 +198,131 @@ class HyperOpinion:
             belief_masses=multinomial_belief, uncertainty=self.uncertainty, base_rates=dict(self.base_rates)
         )
 
-    @property
-    def vagueness(self) -> float:
+    # ------------------------------------------------------------------
+    # Sharp/vague/focal mass decomposition (Section 4.1) and mass-sum (4.2)
+    # ------------------------------------------------------------------
+
+    def sharp_belief_mass(self, x: FrozenSet[Hashable]) -> float:
         """
-        Total belief mass assigned to composite (non-singleton) values in
-        R(X): a simple measure of "vagueness", as opposed to
-        "uncertainty" mass. Full treatment is in Section 4.1.2 (not yet
-        implemented); included here since it falls directly out of the
-        representation already built.
+        Sharp belief mass b^S_X(x), Definition 4.1 / Eq. 4.1 (p. 51-52):
+        belief mass that discriminates specifically in favour of x,
+        summed from every value fully contained in x.
+
+            b^S_X(x) = sum_{xi subseteq x} b_X(xi)
+        """
+        return sum(b for xi, b in self.belief_masses.items() if xi <= x)
+
+    def vague_belief_mass(self, x: FrozenSet[Hashable]) -> float:
+        """
+        Vague belief mass b^V_X(x), Definition 4.3 / Eq. 4.3 (p. 52-53):
+        belief mass "leaking in" to x from composite values that overlap
+        x without being contained in it, weighted by relative base rate.
+
+            b^V_X(x) = sum_{xi in C(X), xi not subseteq x} a_X(x|xi) * b_X(xi)
+
+        Validated against the worked example in Section 4.1.3 (Eq. 4.6-4.7).
+        """
+        total = 0.0
+        for xi, b in self.belief_masses.items():
+            if len(xi) < 2:
+                continue  # only composite values xi in C(X)
+            if xi <= x:
+                continue  # already counted as sharp belief mass for x
+            total += relative_base_rate(self.base_rates, x, xi) * b
+        return total
+
+    def focal_uncertainty_mass(self, x: FrozenSet[Hashable]) -> float:
+        """Focal uncertainty mass u^F_X(x), Definition 4.5 / Eq. 4.8 (p. 55): a_X(x) * u_X."""
+        return base_rate_of_value(self.base_rates, x) * self.uncertainty
+
+    def mass_sum(self, x: FrozenSet[Hashable]) -> tuple:
+        """
+        Mass-sum triplet (sharp, vague, focal) for value x, Definition 4.6
+        / Eq. 4.10. Sums to projected_probability_of(x) (Eq. 4.9).
+        """
+        return (self.sharp_belief_mass(x), self.vague_belief_mass(x), self.focal_uncertainty_mass(x))
+
+    @property
+    def total_sharp_belief_mass(self) -> float:
+        """Total sharp belief mass b^TS_X, Definition 4.2 / Eq. 4.2: sum of belief mass on singletons."""
+        return sum(self.belief_masses[frozenset((x,))] for x in self.domain)
+
+    @property
+    def total_vague_belief_mass(self) -> float:
+        """
+        Total vague belief mass b^TV_X, Definition 4.4 / Eq. 4.4: sum of
+        belief mass assigned to composite values. Equivalent to the
+        `vagueness` property already defined in this class.
         """
         return sum(mass for value, mass in self.belief_masses.items() if len(value) >= 2)
+
+    @property
+    def total_mass_sum(self) -> tuple:
+        """Total mass-sum (b^TS_X, b^TV_X, u_X), Definition 4.7 / Eq. 4.12. Sums to 1 (Eq. 4.11)."""
+        return (self.total_sharp_belief_mass, self.total_vague_belief_mass, self.uncertainty)
+
+    @property
+    def vagueness(self) -> float:
+        """Total belief mass assigned to composite (non-singleton) values in R(X). Same as total_vague_belief_mass."""
+        return self.total_vague_belief_mass
+
+    def to_decision_option(self, x: FrozenSet[Hashable], label: str = None, utility: float = 1.0):
+        """Wrap value x of this opinion as a decision.DecisionOption for use with choose_best_option."""
+        from .decision import DecisionOption
+
+        return DecisionOption(
+            label=label if label is not None else str(set(x)),
+            sharp_belief_mass=self.sharp_belief_mass(x),
+            vague_belief_mass=self.vague_belief_mass(x),
+            focal_uncertainty_mass=self.focal_uncertainty_mass(x),
+            utility=utility,
+        )
+
+    # ------------------------------------------------------------------
+    # Entropy (Section 4.7)
+    # ------------------------------------------------------------------
+
+    def opinion_entropy(self) -> float:
+        """Opinion entropy H_P(omega_X), Eq. 4.55, over domain X (singletons only)."""
+        from . import entropy as _entropy
+
+        return _entropy.opinion_entropy(self.projected_probabilities)
+
+    def sharpness_entropy(self) -> float:
+        """Sharpness entropy H_S(omega_X), Eq. 4.56."""
+        from . import entropy as _entropy
+
+        sharp = {x: self.sharp_belief_mass(frozenset((x,))) for x in self.domain}
+        return _entropy.sharpness_entropy(sharp, self.projected_probabilities)
+
+    def vagueness_entropy(self) -> float:
+        """Vagueness entropy H_V(omega_X), Eq. 4.57."""
+        from . import entropy as _entropy
+
+        vague = {x: self.vague_belief_mass(frozenset((x,))) for x in self.domain}
+        return _entropy.vagueness_entropy(vague, self.projected_probabilities)
+
+    def uncertainty_entropy(self) -> float:
+        """Uncertainty entropy H_U(omega_X), Eq. 4.58."""
+        from . import entropy as _entropy
+
+        focal = {x: self.focal_uncertainty_mass(frozenset((x,))) for x in self.domain}
+        return _entropy.uncertainty_entropy(focal, self.projected_probabilities)
+
+    def cross_entropy(self) -> float:
+        """Base-rate to projected-probability cross entropy H_BP(omega_X), Eq. 4.60."""
+        from . import entropy as _entropy
+
+        return _entropy.cross_entropy(self.base_rates, self.projected_probabilities)
+
+    # ------------------------------------------------------------------
+    # Conflict (Section 4.8)
+    # ------------------------------------------------------------------
+
+    def degree_of_conflict_with(self, other: "HyperOpinion") -> float:
+        """Degree of conflict (Definition 4.20) with another hyper-opinion over the same domain."""
+        from . import conflict as _conflict
+
+        return _conflict.degree_of_conflict(
+            self.projected_probabilities, self.uncertainty, other.projected_probabilities, other.uncertainty
+        )
