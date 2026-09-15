@@ -69,12 +69,10 @@ class MultinomialOpinion:
                 f"{sorted(base_rate_domain, key=str)}."
             )
 
-        if len(belief_domain) <= 2:
+        if len(belief_domain) < 2:
             raise ValueError(
-                "MultinomialOpinion requires a domain of cardinality "
-                f"k > 2 (Definition 3.4, Josang 2016, p. 30); got k = "
-                f"{len(belief_domain)}. Use BinomialOpinion for binary "
-                "domains (k = 2)."
+                "MultinomialOpinion requires a domain of cardinality k >= 2; "
+                f"got k = {len(belief_domain)}."
             )
 
         for label, mapping in (("belief_masses", self.belief_masses), ("base_rates", self.base_rates)):
@@ -372,3 +370,27 @@ class MultinomialOpinion:
         return _conflict.degree_of_conflict(
             self.projected_probabilities, self.uncertainty, other.projected_probabilities, other.uncertainty
         )
+
+    def __mul__(self, other: "MultinomialOpinion") -> "MultinomialOpinion":
+        """Normal multinomial multiplication (Section 8.1.2): the recommended default method."""
+        from .multinomial_operators import normal_multiply
+
+        return normal_multiply(self, other)
+
+    def proportional_multiply(self, other: "MultinomialOpinion") -> "MultinomialOpinion":
+        """Proportional multinomial multiplication (Section 8.1.4): faster, slightly more aggressive alternative."""
+        from .multinomial_operators import proportional_multiply
+
+        return proportional_multiply(self, other)
+
+    def divide(self, opinion_y: "MultinomialOpinion") -> "MultinomialOpinion":
+        """Averaging proportional division (Section 8.3.2). Synthetic -- see multinomial_operators docstring."""
+        from .multinomial_operators import averaging_proportional_divide
+
+        return averaging_proportional_divide(self, opinion_y)
+
+    def selective_divide(self, opinion_y: "MultinomialOpinion", observed_value) -> "MultinomialOpinion":
+        """Selective division (Section 8.3.3), assuming opinion_y asserts observed_value as certain."""
+        from .multinomial_operators import selective_divide
+
+        return selective_divide(self, opinion_y, observed_value)

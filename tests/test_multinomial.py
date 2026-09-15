@@ -93,14 +93,19 @@ def test_vacuous_multinomial_opinion():
         assert math.isclose(opinion.belief_masses[x], 0.0, abs_tol=1e-9)
 
 
-def test_binary_domain_is_rejected():
-    """Definition 3.4 requires k > 2; binary domains should use BinomialOpinion."""
-    with pytest.raises(ValueError):
-        MultinomialOpinion(
-            belief_masses={"x1": 0.5, "x2": 0.3},
-            uncertainty=0.2,
-            base_rates={"x1": 0.5, "x2": 0.5},
-        )
+def test_binary_domain_is_now_allowed():
+    """
+    Definition 3.4 formally restricts multinomial opinions to k > 2, but
+    Chapter 8's cross-domain multiplication/division operators need to
+    treat binary-domain factor opinions (e.g. the book's own gender
+    example, Section 8.2) as multinomial, since the Dirichlet mechanics
+    are valid for k = 2 as well. BinomialOpinion remains preferred for
+    genuinely binary decisions.
+    """
+    opinion = MultinomialOpinion(
+        belief_masses={"x1": 0.5, "x2": 0.3}, uncertainty=0.2, base_rates={"x1": 0.5, "x2": 0.5}
+    )
+    assert opinion.domain == ("x1", "x2")
 
 
 def test_mismatched_domains_are_rejected():

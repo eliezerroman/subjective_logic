@@ -10,6 +10,7 @@ from .entropy import cross_entropy, opinion_entropy, sharpness_entropy, surprisa
 from .hyperopinion import HyperOpinion
 from .multinomial import MultinomialOpinion
 from .operators import add, codivide, comultiply, complement, divide, multiply, subtract
+from .multinomial_operators import averaging_proportional_divide, multiply_dirichlet, normal_multiply, proportional_multiply, selective_divide
 
 __all__ = [
     "BinomialOpinion",
@@ -40,4 +41,9 @@ __all__ = [
     "comultiply", 
     "divide", 
     "codivide",
+    "averaging_proportional_divide", 
+    "multiply_dirichlet", 
+    "normal_multiply",
+    "proportional_multiply", 
+    "selective_divide",
 ]
