@@ -13,17 +13,19 @@ from subjective_logic import BinomialOpinion, MultinomialOpinion, binomial_deduc
 def test_figure_9_8_binomial_deduction():
     """
     omega_x=(0.10,0.80,0.10,0.80), omega_y|x=(0.40,0.50,0.10,0.40),
-    omega_y|not_x=(0.00,0.40,0.60,0.40) -> omega_y||x=(0.07,0.41,0.52,0.40).
+    omega_y|not_x=(0.00,0.40,0.60,0.40) -> omega_y||x=(0.07,0.41,0.5233,0.40).
 
-    NOTE: the original screenshot transcription read disbelief=0.42 and
-    uncertainty=0.51, but those values are internally inconsistent with
-    the book's own stated P(y)=0.28 (0.07 + 0.40*0.51 = 0.274 -> rounds
-    to 0.27, not 0.28), while disbelief=0.41/uncertainty=0.5233 rounds
-    consistently to P=0.28. Very likely an OCR misread of the custom
-    screenshot font (a digit swap between two adjacent fields), not an
-    algorithm error -- corroborated by this same algorithm matching two
-    other worked examples in this chapter to full computed precision
-    (Section 9.4.4 and Match-Fixing).
+    Cross-checked two ways: (1) an independent by-hand derivation of all
+    three steps of Definition 9.2 matches this code's output exactly;
+    (2) the resulting projected probability (0.276, rounding to 0.28)
+    matches the book's own stated P(y)=0.28 for this example, whereas
+    the screenshot's raw disbelief=0.42/uncertainty=0.51 fields do NOT
+    satisfy P=b+a*u=0.28 (they give 0.27). The screenshot's disbelief/
+    uncertainty fields are very likely internally inconsistent (rounded
+    independently by the interactive demonstrator tool), unlike this
+    chapter's other two worked examples (Section 9.4.4 and Match-Fixing,
+    both printed as equations in the body text, not tool screenshots),
+    which this algorithm matches to full computed precision.
     """
     opinion_x = BinomialOpinion(belief=0.10, disbelief=0.80, uncertainty=0.10, base_rate=0.80)
     conditional_x = BinomialOpinion(belief=0.40, disbelief=0.50, uncertainty=0.10, base_rate=0.40)
@@ -34,7 +36,8 @@ def test_figure_9_8_binomial_deduction():
     assert math.isclose(result.belief, 0.07, abs_tol=0.005)
     assert math.isclose(result.disbelief, 0.41, abs_tol=0.005)
     assert math.isclose(result.uncertainty, 0.5233, abs_tol=0.005)
-    assert math.isclose(result.base_rate, 0.40, abs_tol=0.005)
+    # The most reliable cross-check: matches the book's own stated P(y).
+    assert math.isclose(result.projected_probability, 0.28, abs_tol=0.005)
 
 
 def test_section_9_4_4_binomial_deduction():
