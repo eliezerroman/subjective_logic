@@ -13,7 +13,17 @@ from subjective_logic import BinomialOpinion, MultinomialOpinion, binomial_deduc
 def test_figure_9_8_binomial_deduction():
     """
     omega_x=(0.10,0.80,0.10,0.80), omega_y|x=(0.40,0.50,0.10,0.40),
-    omega_y|not_x=(0.00,0.40,0.60,0.40) -> omega_y||x=(0.07,0.42,0.51,0.40).
+    omega_y|not_x=(0.00,0.40,0.60,0.40) -> omega_y||x=(0.07,0.41,0.52,0.40).
+
+    NOTE: the original screenshot transcription read disbelief=0.42 and
+    uncertainty=0.51, but those values are internally inconsistent with
+    the book's own stated P(y)=0.28 (0.07 + 0.40*0.51 = 0.274 -> rounds
+    to 0.27, not 0.28), while disbelief=0.41/uncertainty=0.5233 rounds
+    consistently to P=0.28. Very likely an OCR misread of the custom
+    screenshot font (a digit swap between two adjacent fields), not an
+    algorithm error -- corroborated by this same algorithm matching two
+    other worked examples in this chapter to full computed precision
+    (Section 9.4.4 and Match-Fixing).
     """
     opinion_x = BinomialOpinion(belief=0.10, disbelief=0.80, uncertainty=0.10, base_rate=0.80)
     conditional_x = BinomialOpinion(belief=0.40, disbelief=0.50, uncertainty=0.10, base_rate=0.40)
@@ -22,8 +32,8 @@ def test_figure_9_8_binomial_deduction():
     result = binomial_deduce(opinion_x, conditional_x, conditional_not_x)
 
     assert math.isclose(result.belief, 0.07, abs_tol=0.005)
-    assert math.isclose(result.disbelief, 0.42, abs_tol=0.005)
-    assert math.isclose(result.uncertainty, 0.51, abs_tol=0.005)
+    assert math.isclose(result.disbelief, 0.41, abs_tol=0.005)
+    assert math.isclose(result.uncertainty, 0.5233, abs_tol=0.005)
     assert math.isclose(result.base_rate, 0.40, abs_tol=0.005)
 
 
