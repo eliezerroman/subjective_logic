@@ -406,3 +406,15 @@ class MultinomialOpinion:
         from .abduction import multinomial_abduce
 
         return multinomial_abduce(self, conditionals, base_rates_x, base_rates_y)
+
+    def joint_with(self, conditionals, base_rates_y=None) -> "MultinomialOpinion":
+        """Joint opinion omega_YX (Section 11.2): self is the parent evidence opinion omega_X."""
+        from .joint import joint_opinion
+
+        return joint_opinion(self, conditionals, base_rates_y)
+
+    def marginalize(self) -> tuple:
+        """Marginalise this joint opinion (domain of (y, x) tuples) onto its two factor variables (Section 11.3.1)."""
+        from .joint import marginalize as _marginalize
+
+        return _marginalize(self)
