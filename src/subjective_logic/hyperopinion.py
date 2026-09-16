@@ -36,6 +36,7 @@ from .domain import base_rate_of_value, hyperdomain, relative_base_rate
 from .multinomial import MultinomialOpinion
 
 _ADDITIVITY_TOLERANCE: float = 1e-9
+_TOLERANCE: float = 1e-9
 
 
 @dataclass(frozen=True)
@@ -326,3 +327,46 @@ class HyperOpinion:
         return _conflict.degree_of_conflict(
             self.projected_probabilities, self.uncertainty, other.projected_probabilities, other.uncertainty
         )
+
+    def fuse_constraint(self, other: "HyperOpinion") -> "HyperOpinion":
+        """
+        Belief constraint fusion (Definition 12.3, Eq. 12.1-12.2): an
+        extension of Dempster's rule, suited for merging PREFERENCES
+        (each source narrows down acceptable values) rather than
+        evidence about a shared truth (p. 215-216: the book explicitly
+        warns this is NOT the right operator for combining multiple
+        agents' evidence about the same fact -- use cumulative,
+        averaging or weighted fusion for that instead).
+
+        Raises:
+            ValueError: if the two opinions are totally conflicting
+            (Con = 1, Eq. 12.4) -- no compromise exists (Section 12.2.6).
+        """
+        from .fusion import _conflict, _harmony
+
+        conflict = _conflict(self.belief_masses, other.belief_masses)
+        if conflict >= 1.0 - _TOLERANCE:
+            raise ValueError(
+                "Cannot apply belief constraint fusion: the opinions are totally conflicting "
+                "(Con = 1); no compromise exists (Section 12.2.6, p. 225)."
+            )
+
+        ua, ub = self.uncertainty, other.uncertainty
+        denom = 1.0 - conflict
+
+        if ua < 1.0 or ub < 1.0:
+            belief = {
+                value: _harmony(value, self.belief_masses, ua, other.belief_masses, ub) / denom
+                for value in self.hyperdomain_values
+            }
+            uncertainty = (ua * ub) / denom
+            base_rates = {
+                x: (self.base_rates[x] * (1 - ua) + other.base_rates[x] * (1 - ub)) / (2 - ua - ub)
+                for x in self.domain
+            }
+        else:  # ua == ub == 1
+            belief = {value: 0.0 for value in self.hyperdomain_values}
+            uncertainty = 1.0
+            base_rates = {x: (self.base_rates[x] + other.base_rates[x]) / 2 for x in self.domain}
+
+        return HyperOpinion(belief_masses=belief, uncertainty=uncertainty, base_rates=base_rates)

@@ -14,6 +14,7 @@ from .multinomial_operators import averaging_proportional_divide, multiply_diric
 from .deduction import binomial_deduce, free_base_rate_interval, material_implication, multinomial_deduce
 from .abduction import binomial_abduce, binomial_invert, dependence, independence, irrelevance, multinomial_abduce, multinomial_invert, relevance
 from .joint import joint_opinion, marginal_conditionals, marginalize
+from .fusion import averaging_fusion, cumulative_fusion, weighted_fusion
 
 __all__ = [
     "BinomialOpinion",
@@ -64,4 +65,7 @@ __all__ = [
     "joint_opinion", 
     "marginal_conditionals", 
     "marginalize",
+    "averaging_fusion", 
+    "cumulative_fusion", 
+    "weighted_fusion",
 ]

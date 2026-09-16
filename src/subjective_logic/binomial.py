@@ -426,3 +426,56 @@ class BinomialOpinion:
         from .abduction import binomial_abduce
 
         return binomial_abduce(self, conditional_given_x, conditional_given_not_x, base_rate_x)
+
+    # ------------------------------------------------------------------
+    # Uncertainty-maximisation (Eq. 3.27, k=2 special case) and fusion (Ch. 12)
+    # ------------------------------------------------------------------
+
+    def uncertainty_maximized(self) -> "BinomialOpinion":
+        """Uncertainty-maximised opinion with the same projected probability, Eq. 3.27 (k=2 case)."""
+        p = self.projected_probability
+        a = self.base_rate
+        if a == 0 or a == 1:
+            raise ValueError("Cannot uncertainty-maximise a binomial opinion whose base rate is 0 or 1.")
+        u_max = min(p / a, (1 - p) / (1 - a))
+        return BinomialOpinion(
+            belief=p - a * u_max, disbelief=(1 - p) - (1 - a) * u_max, uncertainty=u_max, base_rate=a
+        )
+
+    def _domain_dicts(self):
+        return (
+            {"x": self.belief, "not_x": self.disbelief},
+            self.uncertainty,
+            {"x": self.base_rate, "not_x": 1.0 - self.base_rate},
+        )
+
+    def fuse_cumulative(self, other: "BinomialOpinion") -> "BinomialOpinion":
+        """Aleatory cumulative belief fusion (Definition 12.5): self and other are INDEPENDENT sources."""
+        from .fusion import cumulative_fusion
+
+        belief_a, u_a, base_rates_a = self._domain_dicts()
+        belief_b, u_b, base_rates_b = other._domain_dicts()
+        belief, u, base_rates = cumulative_fusion(belief_a, u_a, base_rates_a, belief_b, u_b, base_rates_b, ("x", "not_x"))
+        return BinomialOpinion(belief=belief["x"], disbelief=belief["not_x"], uncertainty=u, base_rate=base_rates["x"])
+
+    def fuse_epistemic_cumulative(self, other: "BinomialOpinion") -> "BinomialOpinion":
+        """Epistemic cumulative belief fusion (Definition 12.6): cumulative fusion, then uncertainty-maximised."""
+        return self.fuse_cumulative(other).uncertainty_maximized()
+
+    def fuse_averaging(self, other: "BinomialOpinion") -> "BinomialOpinion":
+        """Averaging belief fusion (Definition 12.7): self and other are DEPENDENT sources."""
+        from .fusion import averaging_fusion
+
+        belief_a, u_a, base_rates_a = self._domain_dicts()
+        belief_b, u_b, base_rates_b = other._domain_dicts()
+        belief, u, base_rates = averaging_fusion(belief_a, u_a, base_rates_a, belief_b, u_b, base_rates_b, ("x", "not_x"))
+        return BinomialOpinion(belief=belief["x"], disbelief=belief["not_x"], uncertainty=u, base_rate=base_rates["x"])
+
+    def fuse_weighted(self, other: "BinomialOpinion") -> "BinomialOpinion":
+        """Weighted belief fusion (Definition 12.8): averaging weighted by each source's confidence."""
+        from .fusion import weighted_fusion
+
+        belief_a, u_a, base_rates_a = self._domain_dicts()
+        belief_b, u_b, base_rates_b = other._domain_dicts()
+        belief, u, base_rates = weighted_fusion(belief_a, u_a, base_rates_a, belief_b, u_b, base_rates_b, ("x", "not_x"))
+        return BinomialOpinion(belief=belief["x"], disbelief=belief["not_x"], uncertainty=u, base_rate=base_rates["x"])

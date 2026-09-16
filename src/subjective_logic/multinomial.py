@@ -418,3 +418,37 @@ class MultinomialOpinion:
         from .joint import marginalize as _marginalize
 
         return _marginalize(self)
+
+    def fuse_cumulative(self, other: "MultinomialOpinion") -> "MultinomialOpinion":
+        """Aleatory cumulative belief fusion (Definition 12.5): self and other are INDEPENDENT sources."""
+        from .fusion import cumulative_fusion
+
+        belief, u, base_rates = cumulative_fusion(
+            self.belief_masses, self.uncertainty, self.base_rates,
+            other.belief_masses, other.uncertainty, other.base_rates, self.domain,
+        )
+        return MultinomialOpinion(belief_masses=belief, uncertainty=u, base_rates=base_rates)
+
+    def fuse_epistemic_cumulative(self, other: "MultinomialOpinion") -> "MultinomialOpinion":
+        """Epistemic cumulative belief fusion (Definition 12.6): cumulative fusion, then uncertainty-maximised."""
+        return self.fuse_cumulative(other).uncertainty_maximized()
+
+    def fuse_averaging(self, other: "MultinomialOpinion") -> "MultinomialOpinion":
+        """Averaging belief fusion (Definition 12.7): self and other are DEPENDENT sources."""
+        from .fusion import averaging_fusion
+
+        belief, u, base_rates = averaging_fusion(
+            self.belief_masses, self.uncertainty, self.base_rates,
+            other.belief_masses, other.uncertainty, other.base_rates, self.domain,
+        )
+        return MultinomialOpinion(belief_masses=belief, uncertainty=u, base_rates=base_rates)
+
+    def fuse_weighted(self, other: "MultinomialOpinion") -> "MultinomialOpinion":
+        """Weighted belief fusion (Definition 12.8): averaging weighted by each source's confidence."""
+        from .fusion import weighted_fusion
+
+        belief, u, base_rates = weighted_fusion(
+            self.belief_masses, self.uncertainty, self.base_rates,
+            other.belief_masses, other.uncertainty, other.base_rates, self.domain,
+        )
+        return MultinomialOpinion(belief_masses=belief, uncertainty=u, base_rates=base_rates)
