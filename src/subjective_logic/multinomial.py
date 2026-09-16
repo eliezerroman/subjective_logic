@@ -394,3 +394,9 @@ class MultinomialOpinion:
         from .multinomial_operators import selective_divide
 
         return selective_divide(self, opinion_y, observed_value)
+
+    def deduce(self, conditionals: Mapping, base_rates_y: Mapping = None) -> "MultinomialOpinion":
+        """Multinomial conditional deduction (Definition 9.2): self is the parent evidence opinion omega_X."""
+        from .deduction import multinomial_deduce
+
+        return multinomial_deduce(self, conditionals, base_rates_y)

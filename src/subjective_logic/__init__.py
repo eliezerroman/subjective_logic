@@ -11,6 +11,7 @@ from .hyperopinion import HyperOpinion
 from .multinomial import MultinomialOpinion
 from .operators import add, codivide, comultiply, complement, divide, multiply, subtract
 from .multinomial_operators import averaging_proportional_divide, multiply_dirichlet, normal_multiply, proportional_multiply, selective_divide
+from .deduction import binomial_deduce, free_base_rate_interval, material_implication, multinomial_deduce
 
 __all__ = [
     "BinomialOpinion",
@@ -46,4 +47,8 @@ __all__ = [
     "normal_multiply",
     "proportional_multiply", 
     "selective_divide",
+    "binomial_deduce", 
+    "free_base_rate_interval", 
+    "material_implication", 
+    "multinomial_deduce",
 ]

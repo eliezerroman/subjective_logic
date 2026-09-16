@@ -414,3 +414,9 @@ class BinomialOpinion:
         from .operators import codivide
 
         return codivide(self, other)
+
+    def deduce(self, conditional_given_x: "BinomialOpinion", conditional_given_not_x: "BinomialOpinion") -> "BinomialOpinion":
+        """Binomial conditional deduction (Definition 9.1): self is omega_x."""
+        from .deduction import binomial_deduce
+
+        return binomial_deduce(self, conditional_given_x, conditional_given_not_x)
