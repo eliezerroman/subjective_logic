@@ -400,3 +400,9 @@ class MultinomialOpinion:
         from .deduction import multinomial_deduce
 
         return multinomial_deduce(self, conditionals, base_rates_y)
+
+    def abduce(self, conditionals, base_rates_x, base_rates_y=None) -> "MultinomialOpinion":
+        """Multinomial abduction (Definition 10.7): self is the evidence opinion omega_Y."""
+        from .abduction import multinomial_abduce
+
+        return multinomial_abduce(self, conditionals, base_rates_x, base_rates_y)

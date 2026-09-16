@@ -420,3 +420,9 @@ class BinomialOpinion:
         from .deduction import binomial_deduce
 
         return binomial_deduce(self, conditional_given_x, conditional_given_not_x)
+
+    def abduce(self, conditional_given_x, conditional_given_not_x, base_rate_x: float) -> "BinomialOpinion":
+        """Binomial abduction (Definition 10.5): self is the evidence opinion omega_y."""
+        from .abduction import binomial_abduce
+
+        return binomial_abduce(self, conditional_given_x, conditional_given_not_x, base_rate_x)
