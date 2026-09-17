@@ -19,7 +19,7 @@ from subjective_logic import (
 def _chained_example():
     base_rates_x = {"x1": 0.700, "x2": 0.300}
     base_rates_y = {"y1": 0.732, "y2": 0.268}
-    base_rates_z = {"z1": 0.717, "z2": 0.282}
+    base_rates_z = {"z1": 0.717, "z2": 0.283}
 
     y_given_x = {
         "x1": MultinomialOpinion(belief_masses={"y1": 0.950, "y2": 0.000}, uncertainty=0.050, base_rates=base_rates_y),
