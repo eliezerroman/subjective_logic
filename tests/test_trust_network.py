@@ -81,11 +81,29 @@ def test_resolve_combined_series_and_parallel():
     assert math.isclose(result.uncertainty, expected.uncertainty, abs_tol=1e-9)
 
 
-def test_resolve_raises_for_disconnected_edge():
-    """A leftover edge unrelated to the source-sink path prevents full reduction."""
+def test_resolve_raises_when_no_path_exists():
+    """
+    resolve() enumerates paths from source to sink directly (Definition
+    14.7's path-based approach), so an unrelated extra edge elsewhere in
+    the graph (e.g. A->Y when resolving A->X) is simply ignored -- it is
+    not on any A-to-X path, so it causes no error. The genuine failure
+    case is when NO path exists at all between source and sink.
+    """
+    op = BinomialOpinion(belief=0.5, disbelief=0.3, uncertainty=0.2, base_rate=0.5)
+    network = TrustNetwork()
+    network.add_edge("A", "Y", op)  # Y is unrelated to X; no path from A to X exists
+    with pytest.raises(ValueError):
+        network.resolve("A", "X")
+
+
+def test_resolve_ignores_unrelated_edges():
+    """A extra edge not on any source-to-sink path should not affect the result or cause an error."""
     op = BinomialOpinion(belief=0.5, disbelief=0.3, uncertainty=0.2, base_rate=0.5)
     network = TrustNetwork()
     network.add_edge("A", "X", op)
-    network.add_edge("A", "Y", op)  # disconnected from the A-X resolution
-    with pytest.raises(ValueError):
-        network.resolve("A", "X")
+    network.add_edge("A", "Y", op)  # unrelated to the A-X resolution
+
+    result = network.resolve("A", "X")
+
+    import math
+    assert math.isclose(result.belief, op.belief, abs_tol=1e-9)

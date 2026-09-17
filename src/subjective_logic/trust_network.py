@@ -48,6 +48,19 @@ _FUSION_METHODS = {
     "weighted": "fuse_weighted",
 }
 
+def _enumerate_paths(adjacency, current, sink, path, visited):
+    if current == sink:
+        yield list(path)
+        return
+    for target, opinion in adjacency.get(current, []):
+        if target in visited:
+            continue  # avoid cycles; a DSPG should be acyclic (Definition 15.2)
+        visited.add(target)
+        path.append(opinion)
+        yield from _enumerate_paths(adjacency, target, sink, path, visited)
+        path.pop()
+        visited.discard(target)
+
 
 class TrustNetwork:
     """
@@ -68,19 +81,6 @@ class TrustNetwork:
         fused during resolve()).
         """
         self._edges.setdefault((source, target), []).append(opinion)
-
-    def _enumerate_paths(adjacency, current, sink, path, visited):
-        if current == sink:
-            yield list(path)
-            return
-        for target, opinion in adjacency.get(current, []):
-            if target in visited:
-                continue  # avoid cycles; a DSPG should be acyclic (Definition 15.2)
-            visited.add(target)
-            path.append(opinion)
-            yield from _enumerate_paths(adjacency, target, sink, path, visited)
-            path.pop()
-            visited.discard(target)
 
     def resolve(self, source: Hashable, sink: Hashable, fusion: str = "cumulative") -> BinomialOpinion:
         """
