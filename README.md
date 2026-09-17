@@ -119,25 +119,28 @@ checks, or cross-checking a formula against an independently-derived version of
 the same quantity).
 
 ## Project layout
+
+```
 src/subjective_logic/
-├── binomial.py # Ch. 2-3: BinomialOpinion
-├── multinomial.py # Ch. 2-3: MultinomialOpinion
-├── hyperopinion.py # Ch. 3: HyperOpinion
-├── domain.py # Ch. 2: hyperdomain/composite-set utilities
-├── decision.py # Ch. 4: mass-sum, utility, decision criteria
-├── entropy.py # Ch. 4: surprisal, opinion entropy
-├── conflict.py # Ch. 4: projected distance, degree of conflict
-├── operators.py # Ch. 6-7: +, -, complement, *, /, comultiply, codivide (binomial)
-├── multinomial_operators.py # Ch. 8: multinomial multiplication/division
-├── deduction.py # Ch. 9: conditional deduction
-├── abduction.py # Ch. 10: subjective Bayes' theorem, abduction
-├── joint.py # Ch. 11: joint and marginal opinions
-├── fusion.py # Ch. 12: cumulative/averaging/weighted fusion, constraint fusion
-├── unfusion.py # Ch. 13: unfusion and fission
-├── trust.py # Ch. 14: trust discounting and revision
-├── trust_network.py # Ch. 15: automated DSPG trust network resolution
-├── reputation.py # Ch. 16: Bayesian reputation systems
-└── subjective_networks.py # Ch. 17: chain rules for subjective Bayesian networks
+├── binomial.py                # Ch. 2-3: BinomialOpinion
+├── multinomial.py              # Ch. 2-3: MultinomialOpinion
+├── hyperopinion.py             # Ch. 3: HyperOpinion
+├── domain.py                   # Ch. 2: hyperdomain/composite-set utilities
+├── decision.py                 # Ch. 4: mass-sum, utility, decision criteria
+├── entropy.py                  # Ch. 4: surprisal, opinion entropy
+├── conflict.py                 # Ch. 4: projected distance, degree of conflict
+├── operators.py                # Ch. 6-7: +, -, complement, *, /, comultiply, codivide (binomial)
+├── multinomial_operators.py    # Ch. 8: multinomial multiplication/division
+├── deduction.py                # Ch. 9: conditional deduction
+├── abduction.py                # Ch. 10: subjective Bayes' theorem, abduction
+├── joint.py                    # Ch. 11: joint and marginal opinions
+├── fusion.py                    # Ch. 12: cumulative/averaging/weighted fusion, constraint fusion
+├── unfusion.py                  # Ch. 13: unfusion and fission
+├── trust.py                     # Ch. 14: trust discounting and revision
+├── trust_network.py             # Ch. 15: automated DSPG trust network resolution
+├── reputation.py                # Ch. 16: Bayesian reputation systems
+└── subjective_networks.py       # Ch. 17: chain rules for subjective Bayesian networks
+```
 
 
 ## Citation
