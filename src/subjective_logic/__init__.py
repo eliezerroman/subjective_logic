@@ -19,6 +19,7 @@ from .unfusion import averaging_unfusion, cumulative_fission, cumulative_unfusio
 from .trust import discount, referral_trust_probability, revision_factor, uncertainty_differential
 from .trust_network import TrustNetwork
 from .reputation import aggregate_with_decay, aggregate_with_decay_n_periods, community_base_rate, convergence_value, individual_base_rate, multinomial_to_binomial, point_estimate
+from .subjective_networks import chain_conditionals, chain_conditionals_multi, chain_deduce, chain_invert, chain_joint
 
 __all__ = [
     "BinomialOpinion",
@@ -87,4 +88,9 @@ __all__ = [
     "individual_base_rate",
     "multinomial_to_binomial",
     "point_estimate",
+    "chain_conditionals", 
+    "chain_conditionals_multi", 
+    "chain_deduce", 
+    "chain_invert", 
+    "chain_joint",
 ]
