@@ -20,7 +20,7 @@ from dataclasses import dataclass
 from types import MappingProxyType
 from typing import Hashable, Mapping
 
-from .binomial import NON_INFORMATIVE_PRIOR_WEIGHT
+from .binomial import BinomialOpinion, NON_INFORMATIVE_PRIOR_WEIGHT
 
 _ADDITIVITY_TOLERANCE: float = 1e-9
 

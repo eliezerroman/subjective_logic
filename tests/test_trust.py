@@ -6,7 +6,7 @@ Tests for computational trust (Chapter 14), validated against Eq. 14.8
 
 import math
 
-from subjective_logic import BinomialOpinion, degree_of_conflict, referral_trust_probability
+from subjective_logic import BinomialOpinion, referral_trust_probability
 
 
 def test_two_edge_discount_matches_eq_14_8():
@@ -77,7 +77,7 @@ def test_trust_revision_matches_tables_14_4_and_14_5():
     assert math.isclose(simple_fused.projected_probability, 0.465, abs_tol=0.01)
 
     # Trust revision (Table 14.5).
-    conflict = degree_of_conflict(discounted_bob, discounted_claire)
+    conflict = discounted_bob.degree_of_conflict_with(discounted_claire)
     assert math.isclose(conflict, 0.581, abs_tol=0.01)
 
     from subjective_logic import revision_factor

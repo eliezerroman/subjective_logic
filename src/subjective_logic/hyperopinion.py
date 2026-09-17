@@ -31,7 +31,7 @@ from dataclasses import dataclass
 from types import MappingProxyType
 from typing import FrozenSet, Hashable, Mapping
 
-from .binomial import NON_INFORMATIVE_PRIOR_WEIGHT
+from .binomial import BinomialOpinion, NON_INFORMATIVE_PRIOR_WEIGHT
 from .domain import base_rate_of_value, hyperdomain, relative_base_rate
 from .multinomial import MultinomialOpinion
 
