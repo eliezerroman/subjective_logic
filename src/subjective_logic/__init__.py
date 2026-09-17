@@ -18,6 +18,7 @@ from .fusion import averaging_fusion, cumulative_fusion, weighted_fusion
 from .unfusion import averaging_unfusion, cumulative_fission, cumulative_unfusion
 from .trust import discount, referral_trust_probability, revision_factor, uncertainty_differential
 from .trust_network import TrustNetwork
+from .reputation import aggregate_with_decay, aggregate_with_decay_n_periods, community_base_rate, convergence_value, individual_base_rate, multinomial_to_binomial, point_estimate
 
 __all__ = [
     "BinomialOpinion",
@@ -79,4 +80,11 @@ __all__ = [
     "revision_factor", 
     "uncertainty_differential",
     "TrustNetwork",
+    "aggregate_with_decay",
+    "aggregate_with_decay_n_periods",
+    "community_base_rate",
+    "convergence_value",
+    "individual_base_rate",
+    "multinomial_to_binomial",
+    "point_estimate",
 ]
