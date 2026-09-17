@@ -16,6 +16,7 @@ from .abduction import binomial_abduce, binomial_invert, dependence, independenc
 from .joint import joint_opinion, marginal_conditionals, marginalize
 from .fusion import averaging_fusion, cumulative_fusion, weighted_fusion
 from .unfusion import averaging_unfusion, cumulative_fission, cumulative_unfusion
+from .trust import discount, referral_trust_probability, revision_factor, uncertainty_differential
 
 __all__ = [
     "BinomialOpinion",
@@ -72,4 +73,8 @@ __all__ = [
     "averaging_unfusion", 
     "cumulative_fission", 
     "cumulative_unfusion",
+    "discount", 
+    "referral_trust_probability", 
+    "revision_factor", 
+    "uncertainty_differential",
 ]

@@ -389,3 +389,14 @@ class HyperOpinion:
             HyperOpinion(belief_masses=b1, uncertainty=u1, base_rates=dict(self.base_rates)),
             HyperOpinion(belief_masses=b2, uncertainty=u2, base_rates=dict(self.base_rates)),
         )
+
+    def discount_by_probability(self, trust_probability: float) -> "HyperOpinion":
+        """Trust discounting using an explicit trust probability (Eq. 14.6/14.14), over the full hyperdomain R(X)."""
+        from .trust import discount
+
+        belief, u = discount(trust_probability, self.belief_masses, self.uncertainty, self.hyperdomain_values)
+        return HyperOpinion(belief_masses=belief, uncertainty=u, base_rates=dict(self.base_rates))
+
+    def discount_by(self, trust: "BinomialOpinion") -> "HyperOpinion":
+        """Two-edge trust discounting (Definition 14.6): self is the source opinion."""
+        return self.discount_by_probability(trust.projected_probability)

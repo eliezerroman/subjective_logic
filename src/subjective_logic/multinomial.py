@@ -476,3 +476,14 @@ class MultinomialOpinion:
             MultinomialOpinion(belief_masses=b1, uncertainty=u1, base_rates=dict(self.base_rates)),
             MultinomialOpinion(belief_masses=b2, uncertainty=u2, base_rates=dict(self.base_rates)),
         )
+
+    def discount_by_probability(self, trust_probability: float) -> "MultinomialOpinion":
+        """Trust discounting using an explicit trust probability (Eq. 14.6/14.14)."""
+        from .trust import discount
+
+        belief, u = discount(trust_probability, self.belief_masses, self.uncertainty, self.domain)
+        return MultinomialOpinion(belief_masses=belief, uncertainty=u, base_rates=dict(self.base_rates))
+
+    def discount_by(self, trust: "BinomialOpinion") -> "MultinomialOpinion":
+        """Two-edge trust discounting (Definition 14.6): self is the source opinion."""
+        return self.discount_by_probability(trust.projected_probability)

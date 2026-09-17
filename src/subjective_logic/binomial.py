@@ -512,3 +512,32 @@ class BinomialOpinion:
             BinomialOpinion(belief=b1["x"], disbelief=b1["not_x"], uncertainty=u1, base_rate=self.base_rate),
             BinomialOpinion(belief=b2["x"], disbelief=b2["not_x"], uncertainty=u2, base_rate=self.base_rate),
         )
+
+    def discount_by_probability(self, trust_probability: float) -> "BinomialOpinion":
+        """
+        Trust discounting using an explicit trust probability (Eq. 14.6),
+        e.g. from referral_trust_probability() for multi-edge paths
+        (Definition 14.7).
+        """
+        from .trust import discount
+
+        belief_dict = {"x": self.belief, "not_x": self.disbelief}
+        discounted, u = discount(trust_probability, belief_dict, self.uncertainty, ("x", "not_x"))
+        return BinomialOpinion(belief=discounted["x"], disbelief=discounted["not_x"], uncertainty=u, base_rate=self.base_rate)
+
+    def discount_by(self, trust: "BinomialOpinion") -> "BinomialOpinion":
+        """Two-edge trust discounting (Definition 14.6): self is the source opinion, trust is the referral trust opinion."""
+        return self.discount_by_probability(trust.projected_probability)
+
+    def revise(self, factor: float) -> "BinomialOpinion":
+        """
+        Revised referral trust opinion (Eq. 14.25/14.26, p. 267): moves
+        the opinion point toward distrust as a function of the revision
+        factor (see trust.revision_factor).
+        """
+        return BinomialOpinion(
+            belief=self.belief - self.belief * factor,
+            disbelief=self.disbelief + (1 - self.disbelief) * factor,
+            uncertainty=self.uncertainty - self.uncertainty * factor,
+            base_rate=self.base_rate,
+        )
