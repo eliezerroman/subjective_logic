@@ -370,3 +370,22 @@ class HyperOpinion:
             base_rates = {x: (self.base_rates[x] + other.base_rates[x]) / 2 for x in self.domain}
 
         return HyperOpinion(belief_masses=belief, uncertainty=uncertainty, base_rates=base_rates)
+
+    def unfuse_cumulative(self, known: "HyperOpinion") -> "HyperOpinion":
+        """Cumulative unfusion (Definition 13.1), over the full hyperdomain R(X)."""
+        from .unfusion import cumulative_unfusion
+
+        belief, u = cumulative_unfusion(
+            self.belief_masses, self.uncertainty, known.belief_masses, known.uncertainty, self.hyperdomain_values
+        )
+        return HyperOpinion(belief_masses=belief, uncertainty=u, base_rates=dict(self.base_rates))
+
+    def split_cumulative(self, phi: float) -> tuple:
+        """Cumulative fission (Definition 13.3), over the full hyperdomain R(X)."""
+        from .unfusion import cumulative_fission
+
+        b1, u1, b2, u2 = cumulative_fission(self.belief_masses, self.uncertainty, phi, self.hyperdomain_values)
+        return (
+            HyperOpinion(belief_masses=b1, uncertainty=u1, base_rates=dict(self.base_rates)),
+            HyperOpinion(belief_masses=b2, uncertainty=u2, base_rates=dict(self.base_rates)),
+        )

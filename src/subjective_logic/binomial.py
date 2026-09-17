@@ -479,3 +479,36 @@ class BinomialOpinion:
         belief_b, u_b, base_rates_b = other._domain_dicts()
         belief, u, base_rates = weighted_fusion(belief_a, u_a, base_rates_a, belief_b, u_b, base_rates_b, ("x", "not_x"))
         return BinomialOpinion(belief=belief["x"], disbelief=belief["not_x"], uncertainty=u, base_rate=base_rates["x"])
+
+    def unfuse_cumulative(self, known: "BinomialOpinion") -> "BinomialOpinion":
+        """Cumulative unfusion (Definition 13.1): self is the fused opinion; recovers the contributor not equal to `known`."""
+        from .unfusion import cumulative_unfusion
+
+        if abs(self.base_rate - known.base_rate) > 1e-9:
+            raise ValueError("Unfusion requires the fused and known opinions to share the same base rate.")
+        belief_fused = {"x": self.belief, "not_x": self.disbelief}
+        belief_known = {"x": known.belief, "not_x": known.disbelief}
+        belief, u = cumulative_unfusion(belief_fused, self.uncertainty, belief_known, known.uncertainty, ("x", "not_x"))
+        return BinomialOpinion(belief=belief["x"], disbelief=belief["not_x"], uncertainty=u, base_rate=self.base_rate)
+
+    def unfuse_averaging(self, known: "BinomialOpinion") -> "BinomialOpinion":
+        """Averaging unfusion (Definition 13.2)."""
+        from .unfusion import averaging_unfusion
+
+        if abs(self.base_rate - known.base_rate) > 1e-9:
+            raise ValueError("Unfusion requires the fused and known opinions to share the same base rate.")
+        belief_fused = {"x": self.belief, "not_x": self.disbelief}
+        belief_known = {"x": known.belief, "not_x": known.disbelief}
+        belief, u = averaging_unfusion(belief_fused, self.uncertainty, belief_known, known.uncertainty, ("x", "not_x"))
+        return BinomialOpinion(belief=belief["x"], disbelief=belief["not_x"], uncertainty=u, base_rate=self.base_rate)
+
+    def split_cumulative(self, phi: float) -> tuple:
+        """Cumulative fission (Definition 13.3): splits self into two opinions with evidence proportion phi:(1-phi)."""
+        from .unfusion import cumulative_fission
+
+        belief = {"x": self.belief, "not_x": self.disbelief}
+        b1, u1, b2, u2 = cumulative_fission(belief, self.uncertainty, phi, ("x", "not_x"))
+        return (
+            BinomialOpinion(belief=b1["x"], disbelief=b1["not_x"], uncertainty=u1, base_rate=self.base_rate),
+            BinomialOpinion(belief=b2["x"], disbelief=b2["not_x"], uncertainty=u2, base_rate=self.base_rate),
+        )

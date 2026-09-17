@@ -452,3 +452,27 @@ class MultinomialOpinion:
             other.belief_masses, other.uncertainty, other.base_rates, self.domain,
         )
         return MultinomialOpinion(belief_masses=belief, uncertainty=u, base_rates=base_rates)
+
+    def unfuse_cumulative(self, known: "MultinomialOpinion") -> "MultinomialOpinion":
+        """Cumulative unfusion (Definition 13.1)."""
+        from .unfusion import cumulative_unfusion
+
+        belief, u = cumulative_unfusion(self.belief_masses, self.uncertainty, known.belief_masses, known.uncertainty, self.domain)
+        return MultinomialOpinion(belief_masses=belief, uncertainty=u, base_rates=dict(self.base_rates))
+
+    def unfuse_averaging(self, known: "MultinomialOpinion") -> "MultinomialOpinion":
+        """Averaging unfusion (Definition 13.2)."""
+        from .unfusion import averaging_unfusion
+
+        belief, u = averaging_unfusion(self.belief_masses, self.uncertainty, known.belief_masses, known.uncertainty, self.domain)
+        return MultinomialOpinion(belief_masses=belief, uncertainty=u, base_rates=dict(self.base_rates))
+
+    def split_cumulative(self, phi: float) -> tuple:
+        """Cumulative fission (Definition 13.3)."""
+        from .unfusion import cumulative_fission
+
+        b1, u1, b2, u2 = cumulative_fission(self.belief_masses, self.uncertainty, phi, self.domain)
+        return (
+            MultinomialOpinion(belief_masses=b1, uncertainty=u1, base_rates=dict(self.base_rates)),
+            MultinomialOpinion(belief_masses=b2, uncertainty=u2, base_rates=dict(self.base_rates)),
+        )
