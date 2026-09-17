@@ -71,7 +71,8 @@ def test_resolve_combined_series_and_parallel():
 
     result = network.resolve("A", "E")
 
-    path1 = opinion_ce.discount_by(trust_bc).discount_by(trust_ab)
+    path1_probability = trust_bc.projected_probability * trust_ab.projected_probability
+    path1 = opinion_ce.discount_by_probability(path1_probability)
     path2 = opinion_de.discount_by(trust_ad)
     expected = path1.fuse_cumulative(path2)
 

@@ -69,69 +69,86 @@ class TrustNetwork:
         """
         self._edges.setdefault((source, target), []).append(opinion)
 
+    def _enumerate_paths(adjacency, current, sink, path, visited):
+        if current == sink:
+            yield list(path)
+            return
+        for target, opinion in adjacency.get(current, []):
+            if target in visited:
+                continue  # avoid cycles; a DSPG should be acyclic (Definition 15.2)
+            visited.add(target)
+            path.append(opinion)
+            yield from _enumerate_paths(adjacency, target, sink, path, visited)
+            path.pop()
+            visited.discard(target)
+
     def resolve(self, source: Hashable, sink: Hashable, fusion: str = "cumulative") -> BinomialOpinion:
         """
-        Reduce the DSPG between source and sink to a single derived
-        opinion, per Definition 15.1's series/parallel collapse
-        procedure.
+        Derive A's opinion at the sink from a DSPG, per Definition 14.7 /
+        Eq. 14.13-14.14: for EACH complete path from source to sink,
+        multiply the projected probabilities of every edge except the
+        last (Eq. 14.13), then apply trust discounting ONCE to the last
+        edge using that product (Eq. 14.14). The results from all
+        complete paths are then fused (Chapter 12).
+
+        IMPORTANT design note: this does NOT repeatedly apply the full
+        two-edge discount operator hop by hop along a referral chain --
+        that would be mathematically wrong (discounting is an affine
+        pull toward each hop's own base rate, not a simple probability
+        multiplication, so chaining it hop by hop does not reproduce
+        Eq. 14.13's plain product). Instead, referral probabilities are
+        multiplied as plain scalars first (via referral_trust_probability),
+        and the full discount operator is applied only once, to the
+        final edge of each path.
+
+        KNOWN LIMITATION: for graphs where multiple paths converge at an
+        INTERMEDIATE node (not directly at sink) before continuing
+        onward -- e.g. Figure 15.4's nested structure -- this function
+        enumerates full source-to-sink paths and fuses everything only
+        at the sink, rather than fusing at the intermediate convergence
+        point and continuing the chain from there (as Section 15.3.1's
+        algorithm describes). Whether these two orders give identical
+        results for such nested cases has not been established here
+        (no worked numeric example exists in the book to check against).
+        For a nested graph, the safe approach is to resolve() the inner
+        sub-network first and feed its result as a single edge into an
+        outer TrustNetwork, rather than relying on one resolve() call
+        for the whole nested structure.
 
         Args:
             fusion: which Chapter 12 operator to use when merging
-                parallel paths -- "cumulative" (independent sources,
-                the default), "averaging" (dependent sources), or
-                "weighted" (confidence-weighted).
+                complete paths -- "cumulative" (default), "averaging",
+                or "weighted".
 
         Raises:
-            ValueError: if the graph cannot be reduced to a single
-            source-sink edge -- it is not a DSPG (Definition 15.2), or
-            there are edges disconnected from the source/sink.
+            ValueError: if no path exists from source to sink.
         """
+        from .trust import referral_trust_probability
+
         if fusion not in _FUSION_METHODS:
             raise ValueError(f"Unknown fusion method {fusion!r}; expected one of {sorted(_FUSION_METHODS)}.")
         fuse_method_name = _FUSION_METHODS[fusion]
 
-        edges = {key: list(value) for key, value in self._edges.items()}
+        adjacency: Dict[Hashable, List[Tuple[Hashable, BinomialOpinion]]] = {}
+        for (u, v), opinions in self._edges.items():
+            for opinion in opinions:
+                adjacency.setdefault(u, []).append((v, opinion))
 
-        progress = True
-        while progress:
-            progress = False
+        paths = list(_enumerate_paths(adjacency, source, sink, [], {source}))
+        if not paths:
+            raise ValueError(f"No path found from {source!r} to {sink!r}.")
 
-            # Parallel reduction (Definition 15.1, operation (ii)).
-            for key, opinions in list(edges.items()):
-                if len(opinions) > 1:
-                    fused = opinions[0]
-                    for other in opinions[1:]:
-                        fused = getattr(fused, fuse_method_name)(other)
-                    edges[key] = [fused]
-                    progress = True
+        discounted_per_path = []
+        for path in paths:
+            if len(path) == 1:
+                discounted_per_path.append(path[0])
+            else:
+                referral_edges, functional_edge = path[:-1], path[-1]
+                probability = referral_trust_probability(referral_edges)
+                discounted_per_path.append(functional_edge.discount_by_probability(probability))
 
-            # Series reduction (Definition 15.1, operation (i)): a node
-            # (not source/sink) with exactly one inbound and one
-            # outbound edge collapses via trust discounting.
-            nodes = {node for pair in edges for node in pair}
-            for node in nodes:
-                if node == source or node == sink:
-                    continue
-                incoming = [key for key in edges if key[1] == node]
-                outgoing = [key for key in edges if key[0] == node]
-                if (
-                    len(incoming) == 1 and len(outgoing) == 1
-                    and len(edges[incoming[0]]) == 1 and len(edges[outgoing[0]]) == 1
-                ):
-                    trust_opinion = edges.pop(incoming[0])[0]
-                    target_opinion = edges.pop(outgoing[0])[0]
-                    discounted = target_opinion.discount_by(trust_opinion)
-                    new_key = (incoming[0][0], outgoing[0][1])
-                    edges.setdefault(new_key, []).append(discounted)
-                    progress = True
-                    break  # edges dict changed; restart the node scan
+        result = discounted_per_path[0]
+        for other in discounted_per_path[1:]:
+            result = getattr(result, fuse_method_name)(other)
 
-        if list(edges.keys()) != [(source, sink)]:
-            raise ValueError(
-                f"Could not reduce the network between {source!r} and {sink!r} to a single edge "
-                "by series/parallel collapse -- it may not be a DSPG (Definition 15.2), or there "
-                "may be edges disconnected from the source/sink. Section 15.4's synthesis method "
-                "for non-series-parallel networks is not implemented here."
-            )
-
-        return edges[(source, sink)][0]
+        return result
