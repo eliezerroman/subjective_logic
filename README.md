@@ -150,8 +150,7 @@ is based on:
 
 A. Jøsang. Subjective Logic. en. Artificial Intelligence: Foundations, Theory,and Algorithms.
 Cham:SpringerInternationalPublishing,2016.isbn:978-3-319-42335-7.doi:10.1007/
-978-3-319-42337-1. url: http://link.springer.com/10.1007/978-3-319-
-42337-1.
+978-3-319-42337-1. url: http://link.springer.com/10.1007/978-3-319-42337-1
 
 ## License
 
