@@ -17,6 +17,7 @@ from .joint import joint_opinion, marginal_conditionals, marginalize
 from .fusion import averaging_fusion, cumulative_fusion, weighted_fusion
 from .unfusion import averaging_unfusion, cumulative_fission, cumulative_unfusion
 from .trust import discount, referral_trust_probability, revision_factor, uncertainty_differential
+from .trust_network import TrustNetwork
 
 __all__ = [
     "BinomialOpinion",
@@ -77,4 +78,5 @@ __all__ = [
     "referral_trust_probability", 
     "revision_factor", 
     "uncertainty_differential",
+    "TrustNetwork",
 ]
