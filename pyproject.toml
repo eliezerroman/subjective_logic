@@ -9,6 +9,7 @@ dependencies = []
 
 [project.optional-dependencies]
 dev = ["pytest"]
+experiments = ["numpy", "scipy", "pandas", "matplotlib"]
 
 [build-system]
 requires = ["setuptools>=61.0"]
