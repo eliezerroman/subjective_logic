@@ -371,6 +371,14 @@ class HyperOpinion:
 
         return HyperOpinion(belief_masses=belief, uncertainty=uncertainty, base_rates=base_rates)
 
+    def fuse_averaging_multi(self, *others: "HyperOpinion") -> "HyperOpinion":
+        """Order-independent N-source averaging fusion (see fusion.multi_source_averaging_fusion)."""
+        from .fusion import multi_source_averaging_fusion
+
+        sources = [(o.belief_masses, o.uncertainty, o.base_rates) for o in (self, *others)]
+        belief, u, base_rates = multi_source_averaging_fusion(sources, self.hyperdomain_values)
+        return HyperOpinion(belief_masses=belief, uncertainty=u, base_rates=base_rates)
+
     def unfuse_cumulative(self, known: "HyperOpinion") -> "HyperOpinion":
         """Cumulative unfusion (Definition 13.1), over the full hyperdomain R(X)."""
         from .unfusion import cumulative_unfusion

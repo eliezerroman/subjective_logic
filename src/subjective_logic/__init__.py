@@ -14,7 +14,7 @@ from .multinomial_operators import averaging_proportional_divide, multiply_diric
 from .deduction import binomial_deduce, free_base_rate_interval, material_implication, multinomial_deduce
 from .abduction import binomial_abduce, binomial_invert, dependence, independence, irrelevance, multinomial_abduce, multinomial_invert, relevance
 from .joint import joint_opinion, marginal_conditionals, marginalize
-from .fusion import averaging_fusion, cumulative_fusion, weighted_fusion
+from .fusion import averaging_fusion, cumulative_fusion, weighted_fusion, multi_source_averaging_fusion
 from .unfusion import averaging_unfusion, cumulative_fission, cumulative_unfusion
 from .trust import discount, referral_trust_probability, revision_factor, uncertainty_differential
 from .trust_network import TrustNetwork
@@ -74,6 +74,7 @@ __all__ = [
     "cumulative_fusion", 
     "weighted_fusion",
     "averaging_unfusion", 
+    "multi_source_averaging_fusion",
     "cumulative_fission", 
     "cumulative_unfusion",
     "discount", 

@@ -139,6 +139,82 @@ def weighted_fusion(
         }
     return belief, uncertainty, base_rates
 
+def multi_source_averaging_fusion(sources, domain):
+    """
+    Order-independent multi-source averaging belief fusion, generalising
+    the pairwise averaging fusion operator (Definition 12.7, Eq.
+    12.18-12.19) to N >= 2 sources.
+
+    Chapter 12 documents a genuine multi-source averaging operator for
+    exactly this purpose. This is a from-first-principles derivation of
+    that operator (not transcribed from a specific equation number, to
+    avoid an unverifiable citation), validated by two properties: it
+    matches the pairwise definition exactly at N=2, and it is
+    order-independent for N=3 and N=4 (checked in the tests).
+
+    WHY THIS EXISTS: chaining the pairwise fuse_averaging operator
+    across more than two opinions -- ((op1 . op2) . op3) . op4 -- is
+    NOT the same as a genuine N-source average and silently gives an
+    order-dependent, generally wrong answer: each pairwise step is a
+    50/50 blend, so the source fused LAST ends up dominating with 50%
+    weight, the second-to-last with 25%, and so on. This was discovered
+    empirically in this project's Phase 2 multi-agent experiments (four
+    classifiers fused via chained fuse_averaging gave four different
+    answers depending on fusion order, one of them accidentally
+    identical to a single source's own solo accuracy). fuse_weighted
+    has the same chaining problem and does not yet have an N-source
+    generalisation here.
+
+    Args:
+        sources: a list of (belief: dict, uncertainty: float, base_rates: dict)
+            tuples, one per source, all sharing the same domain for belief
+            and the same domain for base_rates (not necessarily identical
+            to each other -- e.g. HyperOpinion's belief domain is R(X)
+            while its base rate domain is the singleton domain X).
+        domain: the common set of belief-mass outcome keys.
+
+    Returns:
+        (belief, uncertainty, base_rates): the fused opinion's components.
+
+    Special case: if every source shares the same uncertainty (e.g. all
+    built from evidence with the same fixed total), this reduces to a
+    plain arithmetic mean of the belief masses, with that same shared
+    uncertainty preserved unchanged -- the case Phase 2's Experiment 2.1
+    actually exercised.
+    """
+    uncertainties = [u for _, u, _ in sources]
+    n = len(sources)
+
+    weights = []
+    for i in range(n):
+        weight = 1.0
+        for j, u_j in enumerate(uncertainties):
+            if j != i:
+                weight *= u_j
+        weights.append(weight)
+    denom = sum(weights)
+
+    if denom == 0:
+        # Two or more sources are simultaneously dogmatic (u=0): the general
+        # formula is undefined here. Pragmatic convention, mirroring the
+        # pairwise "both dogmatic" case (Sec. 12.3.1, p. 227): split the
+        # difference among just the dogmatic sources, ignoring the others
+        # (whose contribution vanishes in this limit regardless).
+        dogmatic = [i for i, u in enumerate(uncertainties) if u == 0]
+        belief = {x: sum(sources[i][0][x] for i in dogmatic) / len(dogmatic) for x in domain}
+        uncertainty = 0.0
+    else:
+        belief = {x: sum(sources[i][0][x] * weights[i] for i in range(n)) / denom for x in domain}
+        product_all = 1.0
+        for u in uncertainties:
+            product_all *= u
+        uncertainty = n * product_all / denom
+
+    base_rate_domain = sources[0][2].keys()
+    base_rates = {x: sum(s[2][x] for s in sources) / n for x in base_rate_domain}
+
+    return belief, uncertainty, base_rates
+
 
 def _harmony(x, belief_a: Mapping, uncertainty_a: float, belief_b: Mapping, uncertainty_b: float) -> float:
     """Har(x), Eq. 12.3 (p. 216): relative harmony (overlapping support) between two hyper-opinions at value x."""

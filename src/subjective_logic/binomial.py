@@ -463,7 +463,11 @@ class BinomialOpinion:
         return self.fuse_cumulative(other).uncertainty_maximized()
 
     def fuse_averaging(self, other: "BinomialOpinion") -> "BinomialOpinion":
-        """Averaging belief fusion (Definition 12.7): self and other are DEPENDENT sources."""
+        """Averaging belief fusion (Definition 12.7): self and other are DEPENDENT sources.
+
+        WARNING: only safe to chain across more than two opinions if you
+        verify order-independence yourself -- use fuse_averaging_multi instead.
+        """
         from .fusion import averaging_fusion
 
         belief_a, u_a, base_rates_a = self._domain_dicts()
@@ -472,12 +476,35 @@ class BinomialOpinion:
         return BinomialOpinion(belief=belief["x"], disbelief=belief["not_x"], uncertainty=u, base_rate=base_rates["x"])
 
     def fuse_weighted(self, other: "BinomialOpinion") -> "BinomialOpinion":
-        """Weighted belief fusion (Definition 12.8): averaging weighted by each source's confidence."""
+        """Weighted belief fusion (Definition 12.8): averaging weighted by each source's confidence.
+
+        WARNING: chaining this across more than two opinions is order-dependent
+        and generally wrong, same issue as fuse_averaging (no N-source version
+        of this operator exists yet in this library).
+        """
         from .fusion import weighted_fusion
 
         belief_a, u_a, base_rates_a = self._domain_dicts()
         belief_b, u_b, base_rates_b = other._domain_dicts()
         belief, u, base_rates = weighted_fusion(belief_a, u_a, base_rates_a, belief_b, u_b, base_rates_b, ("x", "not_x"))
+        return BinomialOpinion(belief=belief["x"], disbelief=belief["not_x"], uncertainty=u, base_rate=base_rates["x"])
+
+    def fuse_averaging_multi(self, *others: "BinomialOpinion") -> "BinomialOpinion":
+        """
+        Order-independent N-source averaging fusion (generalises
+        Definition 12.7 to N >= 2 sources; see fusion.multi_source_averaging_fusion).
+        Use this instead of chaining fuse_averaging when combining more
+        than two dependent sources -- chaining is order-dependent and
+        generally wrong for N > 2.
+        """
+        from .fusion import multi_source_averaging_fusion
+
+        domain = ("x", "not_x")
+        sources = [
+            ({"x": o.belief, "not_x": o.disbelief}, o.uncertainty, {"x": o.base_rate, "not_x": 1.0 - o.base_rate})
+            for o in (self, *others)
+        ]
+        belief, u, base_rates = multi_source_averaging_fusion(sources, domain)
         return BinomialOpinion(belief=belief["x"], disbelief=belief["not_x"], uncertainty=u, base_rate=base_rates["x"])
 
     def unfuse_cumulative(self, known: "BinomialOpinion") -> "BinomialOpinion":

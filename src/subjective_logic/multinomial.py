@@ -453,6 +453,14 @@ class MultinomialOpinion:
         )
         return MultinomialOpinion(belief_masses=belief, uncertainty=u, base_rates=base_rates)
 
+    def fuse_averaging_multi(self, *others: "MultinomialOpinion") -> "MultinomialOpinion":
+        """Order-independent N-source averaging fusion (see fusion.multi_source_averaging_fusion)."""
+        from .fusion import multi_source_averaging_fusion
+
+        sources = [(o.belief_masses, o.uncertainty, o.base_rates) for o in (self, *others)]
+        belief, u, base_rates = multi_source_averaging_fusion(sources, self.domain)
+        return MultinomialOpinion(belief_masses=belief, uncertainty=u, base_rates=base_rates)
+
     def unfuse_cumulative(self, known: "MultinomialOpinion") -> "MultinomialOpinion":
         """Cumulative unfusion (Definition 13.1)."""
         from .unfusion import cumulative_unfusion
